@@ -123,6 +123,7 @@ def makePriorityOrder(db:Session,orderId:str):
     db.commit()
 
 def update_status(db:Session):
+    print("checking deliviery status")
     res=db.query(models.Orders).filter(models.Orders.status=='preparing').all()
     for i in res:
         if dependencies.get_time_compare(i.estimatedDelivery):
