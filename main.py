@@ -23,9 +23,12 @@ class SelfPinger:
     async def self_ping(self, url: str):
         async with httpx.AsyncClient() as client:
             while True:
-                response = await client.get(url)
-                print(f"Self-ping response status code: {response.status_code}")
-                await asyncio.sleep(600)  
+                try:
+                    response = await client.get(url)
+                    print(f"Self-ping response status code: {response.status_code}")
+                except:
+                    pass
+                await asyncio.sleep(6)  
 
     def start_ping(self, url: str):
         self.task = asyncio.create_task(self.self_ping(url))
@@ -74,5 +77,8 @@ async def getRoot():
 
 @app.get("/keepalive/{link}")
 async def keepAlive(link:str):
-    self_pinger.start_ping(f"https://{link}.onrender.com/")
-    return {"message": "Self-ping initiated."}
+    url=f"https://{link}.onrender.com/"
+    if self_pinger.task is not None:
+        await self_pinger.stop_ping()
+    self_pinger.start_ping(url)
+    return {"message": f"Self-ping initiated at {url}"}
