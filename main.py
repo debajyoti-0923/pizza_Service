@@ -28,7 +28,7 @@ class SelfPinger:
                     print(f"Self-ping response status code: {response.status_code}")
                 except:
                     pass
-                await asyncio.sleep(6)  
+                await asyncio.sleep(600)  
 
     def start_ping(self, url: str):
         self.task = asyncio.create_task(self.self_ping(url))
