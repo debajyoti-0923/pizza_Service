@@ -7,20 +7,7 @@ from dependencies import get_db
 import crud
 import asyncio
 from contextlib import asynccontextmanager
-import requests
-
-class keepAliveRender:
-    def __init__(self) -> None:
-        self.link=None
-    def createLink(self,link):
-        return f"https://{link}.onrender.com"
-    async def run_main(self):
-        while True:
-            if self.link is None:
-                await asyncio.sleep(5)
-                continue
-            response = requests.get(self.link)
-            await asyncio.sleep(840)
+import httpx
 
 class BackgroundRunner:
     async def run_main(self):
@@ -28,17 +15,40 @@ class BackgroundRunner:
             db:Session=next(get_db())
             crud.update_status(db)
             await asyncio.sleep(60)
-            
+
+class SelfPinger:
+    def __init__(self):
+        self.task = None
+
+    async def self_ping(self, url: str):
+        async with httpx.AsyncClient() as client:
+            while True:
+                response = await client.get(url)
+                print(f"Self-ping response status code: {response.status_code}")
+                await asyncio.sleep(600)  
+
+    def start_ping(self, url: str):
+        self.task = asyncio.create_task(self.self_ping(url))
+
+    async def stop_ping(self):
+        if self.task:
+            self.task.cancel()
+            try:
+                await self.task
+            except asyncio.CancelledError:
+                pass
+
+self_pinger = SelfPinger()
 
 runner = BackgroundRunner()
-keepAliveRunner=keepAliveRender()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("starting background task")
     asyncio.create_task(runner.run_main())
-    asyncio.create_task(keepAliveRunner.run_main())
     yield
+    await self_pinger.stop_ping()
+
 
 app=FastAPI(lifespan=lifespan)
 models.Base.metadata.create_all(bind=engine)
@@ -62,6 +72,7 @@ app.include_router(menu.router)
 async def getRoot():
     return {"message":"Hello from Debu's Pizza Service"}
 
-@app.post("/keepalive/{link}")
+@app.get("/keepalive/{link}")
 async def keepAlive(link:str):
-    keepAliveRunner.link=keepAliveRunner.createLink(link)
+    self_pinger.start_ping(f"https://{link}.onrender.com/")
+    return {"message": "Self-ping initiated."}
