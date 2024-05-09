@@ -5,7 +5,7 @@ from dependencies import get_db
 
 router=APIRouter(
     prefix="/pizza",
-    tags=["pizza"],
+    tags=["Pizza"],
 )
 
 
@@ -17,9 +17,9 @@ async def addPizza(piz:schemas.addPizza,db:Session=Depends(get_db)):
     else:
         return schemas.response(status="fail")
     
-@router.get("/get",response_model=schemas.getPizzaResponse,status_code=status.HTTP_200_OK)
-async def getPizza(db:Session=Depends(get_db)):
-    resModels=crud.get_pizzas(db)
+@router.get("/get/",response_model=schemas.getPizzaResponse,status_code=status.HTTP_200_OK)
+async def getPizza(para:int|str=None,db:Session=Depends(get_db)):
+    resModels=crud.get_pizzas(db,para)
     if resModels is None or resModels==[]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail={"message":"some error while fetching"})
@@ -41,3 +41,12 @@ async def getPizza(db:Session=Depends(get_db)):
         ))
 
     return schemas.getPizzaResponse(status="success",data=data)
+
+
+@router.patch("/update")
+async def update_Pizza_Details(details:schemas.pizzaPatch,db:Session=Depends(get_db)):
+    res=crud.patchPizzas(db,details)
+    if res:
+        return schemas.response(status="ok")
+    else:
+        return schemas.response(status="fail")

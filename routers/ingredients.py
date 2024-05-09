@@ -5,7 +5,7 @@ from dependencies import get_db
 
 router=APIRouter(
     prefix="/ingredients",
-    tags=["ingredients"]  
+    tags=["Ingredients"]  
 )
 
 @router.get("/get",response_model=schemas.getIngredientsResponse,status_code=status.HTTP_200_OK)
@@ -25,5 +25,15 @@ async def addIngredient(ing:schemas.addIngredient,db:Session=Depends(get_db)):
     res=crud.add_ingredients(db,ing)
     if res:
         return schemas.response(status="success")
+    else:
+        return schemas.response(status="fail")
+    
+
+@router.patch("/update")
+async def update_Ingredients_Details(details:schemas.ingredientPatch,db:Session=Depends(get_db)):
+    res=crud.patchIngredients(db,details)
+    print(res)
+    if res:
+        return schemas.response(status="ok")
     else:
         return schemas.response(status="fail")

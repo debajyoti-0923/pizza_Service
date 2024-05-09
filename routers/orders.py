@@ -5,7 +5,7 @@ from dependencies import get_db
 
 router=APIRouter(
     prefix="/order",
-    tags=["order"],
+    tags=["Order"],
 )
 
 def generateCart(resModel):
@@ -16,20 +16,14 @@ def generateCart(resModel):
         totalPrice=(item.pizza.unitPrice)*(item.quantity)
         orderPrice+=totalPrice
         priorityPrice+=item.pizza.priorityPrice
-        addIngsList=[]
-        for addItem in item.addIngs:
-            addIngsList.append(addItem.ingredients.name)
-        remIngsList=[]
-        for remItem in item.removeIngs:
-            remIngsList.append(remItem.ingredients.name)
         k=schemas.orderCartItem(
             pizzaId=item.pizzaId,
             name=item.pizza.name,
             quantity=item.quantity,
             unitPrice=item.pizza.unitPrice,
             totalPrice=totalPrice,
-            addIngredients=addIngsList,
-            removeIngredients=remIngsList,
+            addIngredients=[addItem.ingredients.name for addItem in item.addIngs],
+            removeIngredients=[remItem.ingredients.name for remItem in item.removeIngs],
             additionalNote="" if item.addNotes is None else item.addNotes
         )
         cartItems.append(k)

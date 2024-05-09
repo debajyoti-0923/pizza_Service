@@ -5,11 +5,11 @@ from dependencies import get_db
 
 router=APIRouter(
     prefix="/menu",
-    tags=["pizza menu"],
+    tags=["Pizza menu"],
 )
 
 @router.get("",response_model=schemas.getPizzaResponse,status_code=status.HTTP_200_OK)
-async def getPizza(db:Session=Depends(get_db)):
+async def get_Pizza_menu(db:Session=Depends(get_db)):
     resModels=crud.get_pizzas(db)
     if resModels is None or resModels==[]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,

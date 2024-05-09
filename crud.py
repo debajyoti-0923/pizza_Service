@@ -1,10 +1,17 @@
 from sqlalchemy.orm import Session
 import models,schemas,dependencies,database
+from sqlalchemy import or_
 
 #----------------------------------------------------------------
-def get_pizzas(db:Session):
-    res=db.query(models.PizzaInv).all()
-    return res
+def get_pizzas(db:Session,para:int|str=None):
+    if para is not None:
+        res=db.query(models.PizzaInv).filter(or_(models.PizzaInv.id==para,models.PizzaInv.name==para)).first()
+        if res is None:
+            return res
+        return [res]
+    else:
+        res=db.query(models.PizzaInv).all()
+        return res
 
 def get_ingredients(db:Session):
     res=db.query(models.Ingredients).all()
@@ -123,9 +130,37 @@ def makePriorityOrder(db:Session,orderId:str):
     db.commit()
 
 def update_status(db:Session):
-    print("checking deliviery status")
-    res=db.query(models.Orders).filter(models.Orders.status=='preparing').all()
-    for i in res:
-        if dependencies.get_time_compare(i.estimatedDelivery):
-            db.query(models.Orders).filter(models.Orders.id==i.id).update({'status':'delivered'},synchronize_session=False)
+    # res=db.query(models.Orders).filter(models.Orders.status=='preparing').all()
+    # for i in res:
+    #     if dependencies.get_time_compare(i.estimatedDelivery):
+    #         db.query(models.Orders).filter(models.Orders.id==i.id).update({'status':'delivered'},synchronize_session=False)
+    # db.commit()
+    res=db.query(models.Orders).filter(models.Orders.status=='preparing' , models.Orders.estimatedDelivery<=dependencies.get_current_time()).update({
+        'status':'delivered'
+    },synchronize_session=False)
     db.commit()
+    
+
+
+def patchIngredients(db:Session,details:schemas.ingredientPatch):
+    res=db.query(models.Ingredients).filter(models.Ingredients.id==details.id).update({
+        'name':details.name
+    },synchronize_session=False)
+    db.commit()
+    return res
+
+
+def patchPizzas(db:Session,details:schemas.pizzaPatch):
+    if details.addIngredients != []:
+        for iname in details.addIngredients:
+            res=db.query(models.Ingredients).filter(models.Ingredients.name==iname).first()
+            db.add(models.PizzaIngredients(pizzaId=details.id,ingredientId=res.id))
+    if details.remIngredients != []:
+        for iname in details.remIngredients:
+            res=db.query(models.Ingredients).filter(models.Ingredients.name==iname).first()
+            db.query(models.PizzaIngredients).filter(models.PizzaIngredients.pizzaId==details.id,models.PizzaIngredients.ingredientId==res.id).delete()
+
+    res=db.query(models.PizzaInv).filter(models.PizzaInv.id==details.id).update(details.model_dump(exclude={'id','addIngredients','remIngredients'},exclude_none=True),synchronize_session=False)
+    db.commit()
+
+    return res

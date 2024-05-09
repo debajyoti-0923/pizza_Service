@@ -13,7 +13,6 @@ class BackgroundRunner:
     async def run_main(self):
         while True:
             db:Session=next(get_db())
-            print("check updates func")
             crud.update_status(db)
             await asyncio.sleep(60)
 
